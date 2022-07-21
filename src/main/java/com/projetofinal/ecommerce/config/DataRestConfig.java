@@ -1,17 +1,40 @@
 package com.projetofinal.ecommerce.config;
 
+import javax.persistence.EntityManager;
+import javax.persistence.metamodel.EntityType;
+import org.springframework.beans.factory.annotation.Value;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.rest.core.config.RepositoryRestConfiguration;
 import org.springframework.data.rest.webmvc.config.RepositoryRestConfigurer;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 
+import com.projetofinal.ecommerce.domain.Estado;
+import com.projetofinal.ecommerce.domain.Pais;
 import com.projetofinal.ecommerce.domain.Produto;
 import com.projetofinal.ecommerce.domain.ProdutoCategoria;
 
 @Configuration
 public class DataRestConfig implements RepositoryRestConfigurer {
-
+	
+	
+	private EntityManager entityManager;
+	
+	@Autowired	
+	public DataRestConfig(EntityManager theEntityManager) {
+		entityManager = theEntityManager;
+	}
+	
+	
+	
+	
 	@Override
 	public void configureRepositoryRestConfiguration(RepositoryRestConfiguration config, CorsRegistry cors) {
 		// TODO Auto-generated method stub
@@ -21,17 +44,47 @@ public class DataRestConfig implements RepositoryRestConfigurer {
 		
 		
 		//somente leitura
+		
+		
+		
+		disableHttpMethods(ProdutoCategoria.class, config, theUnsupportedActions);
+		disableHttpMethods(Produto.class, config, theUnsupportedActions);
+		disableHttpMethods(Pais.class, config, theUnsupportedActions);
+		disableHttpMethods(Estado.class, config, theUnsupportedActions);
+		
+		
+		
+		
+		exposeIds(config);
+		
+	}
+
+
+
+
+	private void disableHttpMethods(Class theClass, RepositoryRestConfiguration config, HttpMethod[] theUnsupportedActions) {
 		config.getExposureConfiguration()
-		.forDomainType(Produto.class)
+		.forDomainType(theClass)
 		.withItemExposure((metdata, httpMethods) -> httpMethods.disable(theUnsupportedActions))
 				.withCollectionExposure((metdata, httpMethods) -> httpMethods.disable(theUnsupportedActions));
+	}
+
+
+
+
+	private void exposeIds(RepositoryRestConfiguration config) {
 		
+		Set<EntityType<?>> entities  = entityManager.getMetamodel().getEntities();		
+		List<Class> entityClasses = new ArrayList<>();
 		
-		config.getExposureConfiguration()
-		.forDomainType(ProdutoCategoria.class)
-		.withItemExposure((metdata, httpMethods) -> httpMethods.disable(theUnsupportedActions))
-				.withCollectionExposure((metdata, httpMethods) -> httpMethods.disable(theUnsupportedActions));
+		for (EntityType tempEntityType : entities) {
+			entityClasses.add(tempEntityType.getBindableJavaType());			
+			
+		}
 		
+		Class[] domainTypes = entityClasses.toArray(new Class[0]);
+		config.exposeIdsFor(domainTypes);
+	
 	}
 	
 	
